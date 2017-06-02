@@ -60,10 +60,12 @@ module.exports = (robot) ->
     [dummy, name, operator, reason] = msg.match
     from = msg.message.user.name.toLowerCase()
     room = msg.message.room
+    robot.logger.debug "dummy: #{dummy}, name: #{name}, operator: #{operator}, reason: #{reason}, from: #{from}, room: #{room}"
 
     # do some sanitizing
     reason = reason?.trim().toLowerCase()
-
+    # delete robot name from message
+    name = name.replace ///^\s*#{robot.name}(\s*:)?\s*///i, ''
     if name
       if name.charAt(0) == ':'
         name = (name.replace /(^\s*@)|([,\s]*$)/g, '').trim().toLowerCase()
@@ -74,12 +76,15 @@ module.exports = (robot) ->
     unless name? && name != ''
       [name, lastReason] = scoreKeeper.last(room)
       reason = lastReason if !reason? && lastReason?
+    robot.logger.debug "name: #{name}, reason: #{reason}"
 
     # do the {up, down}vote, and figure out what the new score is
     [score, reasonScore] = if operator == "++"
               scoreKeeper.add(name, from, room, reason)
             else
               scoreKeeper.subtract(name, from, room, reason)
+    robot.logger.debug "score: '#{score}', reason: #{reasonScore}"
+
 
     # if we got a score, then display all the things and fire off events!
     if score?
